@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="initial-scale=0.5">
+  <title>AI RPG</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="aiLoadingBar" class="aiLoadingBar hidden">
+  <label id="aiLoadingText">🤖 AI 正在判断中</label>
+  <label id="aiLoadingDots">...</label>
+  <label id="aiLoadingTimer">0.0s</label>
+</div>
+<div id="headerBar" class = "header-bar">
+  <!-- 按钮 -->
+  <div>
+    <button id="buttonGroupSwitch" class="icon-btn">⚙</button>
+    <div id="controlButtonGroup" class="button-group hidden">
+      <button id="updateLog" class="icon-btn">更新日志</button>
+      <button id="openAIConfigBtn" class="icon-btn">AI 配置</button>
+      <button id="worldInfoBtn" class="icon-btn">游戏记录</button>
+    </div>
+  </div>
+  
+  <!-- 世界观与角色信息页面 -->
+  <div id="worldInfoPage" class="info-panel hidden">
+    <div class="header">
+      <h2>世界观与角色设定</h2>
+    </div>
+
+    <div class="content">
+      <div class="section">
+        <h3>叙事风格</h3>
+        <div id="storyStyleInfoCard" class="info-card"></div>
+      </div>
+
+      <div class="section">
+        <h3>世界观</h3>
+        <div id="worldInfoCard" class="info-card"></div>
+      </div>
+
+      <div class="section">
+        <h3>角色</h3>
+        <div id="characterInfoCard" class="info-card"></div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <button onclick="closeWorldInfoPage()">返回</button>
+      <button onclick="restartGame()">用这个设定重新开始</button>
+    </div>
+  </div>
+  
+  <div id="aiConfigPanel" class="info-panel hidden">
+    <h2>AI 接口配置</h2>
+
+    <!-- 预设配置 -->
+    <div class="api-presets" id="apiPresetsList"></div>
+
+    <div class="content">
+        <label>API 地址</label>
+        <input
+        id="apiUrlInput"
+        placeholder="https://api.openai.com/v1/chat/completions"
+        >
+    </div>
+
+    <div class="content">
+        <label>API Key</label>
+        <input
+        id="apiKeyInput"
+        type="password"
+        placeholder="sk-..."
+        >
+    </div>
+    <div class="api-test">
+      <button id="testApiBtn">测试连接</button>
+      <span id="apiTestStatus" class="status idle">未测试</span>
+      <span id="apiSaveStatus" class="status idle"></span>
+    </div>
+
+    <!-- 模型名称 -->
+    <div class = "content">
+      <label>模型名称</label>
+      <input
+        id="apiModelInput"
+        placeholder="gpt-4o-mini"
+      />
+    </div>
+
+    <div class="api-presets">
+        <button id="saveAIConfigBtn">保存</button>
+    </div>
+  </div>
+  <!-- 更新日志弹窗 -->
+  <div id="changelogOverlay" class="info-panel hidden">
+    <div id="changelogModal">
+        <div class="changelog-header">
+        更新日志
+        <span id="closeChangelog">✕</span>
+        </div>
+        <div class="changelog-content">
+        <p><strong>版本0.1.0</strong></p>
+        <ul>
+            <li>基本框架</li>
+        </ul>
+        <p>……</p>
+        </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <!-- 存档选择界面 -->
+  <div id="saveSelectView" class="framePage" style="display:block;flex:1;">
+    <h1>📁 存档管理</h1>
+
+    <div id="saveList" class="save-list"></div>
+
+    <div class="save-actions">
+      <button id="newSaveBtn" class="primary-btn">创建新存档</button>
+      <button id="importBtn" class="import-btn">导入存档</button>
+      <input id="importInput" type="file" accept=".json" hidden>
+    </div>
+  </div>
+  
+  <!-- 叙事风格生成界面 -->
+  <div id="storyStyleGenView" class="framePage">
+    <h1>🌍 叙事风格生成</h1>
+
+      <div class="prompt-box">
+        <label>提示词（可选）</label>
+        <input id="storyStylePromptInput" placeholder="例如：平衡、轻松愉快、黑暗沉重、喜剧无厘头……">
+      </div>
+
+      <div class="option-generator">
+        <!-- 备选数量控制 -->
+        <div class="option-count">
+          <label for="storyStyleCountRange">
+            备选数量：<span id="storyStyleCountValue">1</span>
+          </label>
+          <input
+            type="range"
+            id="storyStyleCountRange"
+            min="1"
+            max="9"
+            step="1"
+            value="1"
+          />
+        </div>
+
+        <!-- 生成按钮 -->
+        <div class="control-buttons">
+          <button id="generateStoryStyleBtn">生成叙事风格</button>
+        </div>
+      </div>
+
+    <div id="storyStyleList" class="option-list"></div>
+  </div>
+
+  <!-- 世界观生成界面 -->
+  <div id="worldGenView" class="framePage">
+    <h1>🌍 世界观生成</h1>
+
+      <div class="prompt-box">
+        <label>提示词（可选）</label>
+        <input id="worldPromptInput" placeholder="例如：黑暗奇幻、蒸汽波、修仙……">
+      </div>
+
+      <div class="option-generator">
+        <!-- 备选数量控制 -->
+        <div class="option-count">
+          <label for="worldCountRange">
+            备选数量：<span id="worldCountValue">1</span>
+          </label>
+          <input
+            type="range"
+            id="worldCountRange"
+            min="1"
+            max="9"
+            step="1"
+            value="1"
+          />
+        </div>
+
+        <!-- 生成按钮 -->
+        <div class="control-buttons">
+          <button id="generateWorldBtn">生成世界</button>
+        </div>
+      </div>
+
+    <div id="worldList" class="world-list"></div>
+  </div>
+
+  <!-- 角色创建界面 -->
+  <div id="characterGenView" class="framePage">
+    <h1>🧙 角色创建</h1>
+
+    <div class="prompt-box">
+        <label>提示词（可选）</label>
+        <input
+        id="characterPromptInput"
+        placeholder="例如：落魄骑士、流浪法师、冷酷刺客……"
+        >
+    </div>
+
+    <div class="option-generator">
+      <!-- 备选数量控制 -->
+      <div class="option-count">
+        <label for="characterCountRange">
+          备选数量：<span id="characterCountValue">1</span>
+        </label>
+        <input
+          type="range"
+          id="characterCountRange"
+          min="1"
+          max="9"
+          step="1"
+          value="1"
+        />
+      </div>
+
+      <!-- 生成按钮 -->
+      <div class="control-buttons">
+        <button id="generateCharacterBtn">生成角色</button>
+      </div>
+    </div>
+
+    <div id="characterList" class="world-list"></div>
+  </div>
+
+  <div id="initPage" class="info-page hidden">
+    <div class="page-box">
+      <div class="page-header">
+        <h2>准备启动</h2>
+        <p id="initGameLabel" class="subtitle">正在初始化，请稍候……</p>
+      </div>
+
+      <div class="page-content">
+        <ul id="initChecklist" class="checklist">
+          <!-- JS 动态生成 -->
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主游戏界面 -->
+  <div id="gameView" class="framePage">
+    <div id="gameLayout">
+        <!-- 左侧角色面板 -->
+        <div id="leftPanel">
+          <!-- 第一行：角色基本信息 -->
+          <div class="character-header">
+              <label id="charName">未命名</label>
+              <label id="charRace">未知</label>
+              <label id="charGender">未知</label>
+              <label id="charAge">0岁</label>
+          </div>
+
+          <!-- 第二行：六维蛛网图 -->
+          <div class="radar-container">
+              <canvas id="attrRadar" width="260" height="260"></canvas>
+          </div>
+          
+          <div id="attrList" class="attr-List">
+            <!-- JS 生成 -->
+          </div>
+          <div id="resourceList" class="attr-List">
+            <!-- JS 生成 -->
+          </div>
+
+          <!-- 第三行：标签 -->
+          <div class="tag-container" id="tagContainer"></div>
+
+          <!-- 第四行：可用物品 -->
+          <div>
+            <div class="tag-container" id="itemContainer"></div>
+          </div>
+        </div>
+
+        <!-- 拖动中缝 -->
+        <div id="divider"></div>
+
+        <!-- 右侧主内容区（占位） -->
+        <div id="rightPanel">
+          <button id="timeLineCollapseButton" class="icon-btn timeline-collapse-button">📅</button>
+          <div id="timeLineContainer" class="timeline-container">
+            <div id="timelineList" class="timeline-list" aria-live="polite">
+              <!-- JS 动态渲染：卷 -> 章 -> 文本 -->
+            </div>
+          </div>
+          <span id="sceneTitle" class="scene-title"></span>
+          <!-- 场景面板（下方） -->
+          <div id = "scenePanel" class="scene-panel">
+            <div class="scene-field">
+              <span id="sceneTime" class="scene-time"></span>
+              <span id="sceneLocation" class="scene-location"></span>
+              <span id="sceneDescription" class="scene-description"></span>
+              <span id="pendingDescription" class="scene-description"></span>
+            </div>
+
+            <div class="choices-panel">
+              <span id="choicesTitle" class="choices-title"></span>
+              <div id="choicesList" class="choices-list"></div>
+            </div>
+          </div>
+        </div>
+    </div>
+  </div>
+</div>
+
+<script src="main.js"></script>
+</body>
+</html>
