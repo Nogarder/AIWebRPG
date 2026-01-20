@@ -9,7 +9,7 @@
  
 2.（可选）在公开部署中保护私有api key
 
-	2.1 修改main.js，在开头的API_PRESETS里填入对应的api接口信息，以及一个映射用的key
+	2.1 修改main.js，在开头的API_PRESETS里填入对应的api接口信息，以及映射用的key名
   
 	2.2 修改router.js，在开头的_default_keys里填入对应的key映射
   
